@@ -12,8 +12,22 @@ services:
       - NODE_ENV=production
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-Asia/Jakarta}
       - TZ=${TZ:-Asia/Jakarta}
+      - N8N_PAYLOAD_SIZE_MAX=64
     volumes:
       - n8n_data:/home/node/.n8n
+    depends_on:
+      - qdrant
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
 
 volumes:
   n8n_data:
+    external: true  
+  qdrant_data:
