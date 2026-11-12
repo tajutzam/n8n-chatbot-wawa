@@ -176,3 +176,8 @@ Check container health and logs:
 docker compose ps
 docker compose logs --tail=100 n8n
 ```
+
+
+
+Qdrant URL	http://qdrant:6333
+API Key	kosongkan
