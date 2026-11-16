@@ -211,3 +211,15 @@ docker compose logs --tail=100 n8n
 
 Qdrant URL	http://qdrant:6333
 API Key	kosongkan
+
+
+
+# pilih WAHA
+docker compose --profile waha up -d
+
+# atau pilih Evolution API
+docker compose --profile evolution up -d
+
+# ganti dari satu ke yang lain
+docker compose --profile waha down
+docker compose --profile evolution up -d
