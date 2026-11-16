@@ -147,6 +147,36 @@ docker compose up -d --force-recreate
 
 Do not commit `.env`. It is ignored by Git.
 
+## WhatsApp Chatbot (WAHA)
+
+`docker-compose.yml` includes WAHA (WhatsApp HTTP API) on port `3000`. The workflow `chatbot.json` has a WhatsApp flow: incoming WA message → Qdrant knowledge search → Gemini → auto reply via WA.
+
+Setup:
+
+1. Start all services:
+
+   ```bash
+   docker compose up -d
+   ```
+
+2. Open the WAHA dashboard:
+
+   ```text
+   http://localhost:3000/dashboard
+   ```
+
+3. Start session `default` with engine `WEBJS`, then scan the QR code from WhatsApp (**Settings > Linked devices > Link a device**).
+
+4. Import `chatbot.json` into n8n and activate the workflow (the WhatsApp webhook is registered internally at `http://n8n:5678/webhook/waha-chatbot`, already configured in WAHA via `WHATSAPP_HOOK_URL`).
+
+5. Send a message to the connected WhatsApp number. The chatbot replies based on the knowledge stored in Qdrant.
+
+Notes:
+
+- Session (login) is stored in the `waha_sessions` volume, so it survives restarts. Re-scan the QR only when logged out from the phone.
+- Incoming messages that are self-sent, empty, group chats, or status broadcasts are ignored by the `Filter Pesan WA` node.
+- Each sender has its own chat memory (`Window Buffer Memory WA`).
+
 ## Troubleshooting
 
 Port `5678` already in use:

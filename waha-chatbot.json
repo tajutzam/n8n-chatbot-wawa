@@ -1,0 +1,1676 @@
+{
+  "name": "Chatbot Knowledge Dokumen (Gemini + Qdrant)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Upload Knowledge",
+        "formDescription": "Unggah dokumen (xlsx, xls, csv, pdf, txt, md, json) sebagai knowledge chatbot. Knowledge tersimpan permanen di Qdrant dan dipakai semua chat.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Dokumen",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".xlsx,.xls,.csv,.pdf,.txt,.md,.json,.log"
+            },
+            {
+              "fieldLabel": "Mode",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Tambah dokumen"
+                  },
+                  {
+                    "option": "Ganti semua knowledge"
+                  },
+                  {
+                    "option": "Hapus semua knowledge"
+                  },
+                  {
+                    "option": "Lihat daftar knowledge"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c28e8a7b-1913-4f04-bff6-866912eb9640",
+      "name": "Form Upload Knowledge",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        160,
+        416
+      ],
+      "webhookId": "6d8b07ae-3d88-4ba1-a8c5-40d04e8645b9"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst mode = item.json['Mode'] || 'Tambah dokumen';\nconst binary = item.binary || {};\nconst keys = Object.keys(binary);\nconst canStore = mode === 'Tambah dokumen' || mode === 'Ganti semua knowledge';\n\nconst out = { json: { mode, hasFile: keys.length > 0, action: (keys.length > 0 && canStore) ? 'store' : 'manage' } };\n\nif (keys.length > 0) {\n  const b = binary[keys[0]];\n  const fileName = b.fileName || 'dokumen';\n  const ext = (b.fileExtension || fileName.split('.').pop() || '').toLowerCase();\n  out.json.fileName = fileName;\n  out.json.ext = ext;\n  out.binary = { file: b };\n}\nreturn [out];"
+      },
+      "id": "c42def73-d049-4056-84ed-4d88db21a3af",
+      "name": "Siapkan File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-store",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "store",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3028211d-3b15-45ed-832e-6b88301d85be",
+      "name": "Simpan File?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "xlsx-0",
+                    "leftValue": "={{ $json.ext }}",
+                    "rightValue": "xlsx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "xlsx"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "xls-0",
+                    "leftValue": "={{ $json.ext }}",
+                    "rightValue": "xls",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "xls"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "csv-0",
+                    "leftValue": "={{ $json.ext }}",
+                    "rightValue": "csv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "csv"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "pdf-0",
+                    "leftValue": "={{ $json.ext }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "text-0",
+                    "leftValue": "={{ $json.ext }}",
+                    "rightValue": "txt",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "id": "text-1",
+                    "leftValue": "={{ $json.ext }}",
+                    "rightValue": "md",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "id": "text-2",
+                    "leftValue": "={{ $json.ext }}",
+                    "rightValue": "json",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "id": "text-3",
+                    "leftValue": "={{ $json.ext }}",
+                    "rightValue": "log",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "84185866-73f0-4d7a-8e57-fbb04920f87c",
+      "name": "Tipe File",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        848,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "id": "05112f5d-fe99-4c41-a151-3dece3d6a59b",
+      "name": "Extract XLSX",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "xls",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "id": "33a0ab88-628e-425d-94ad-75fb8dbd60da",
+      "name": "Extract XLS",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "id": "a0a3ee25-803e-4d2b-8ac6-5316001c002d",
+      "name": "Extract CSV",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "id": "0cc2617a-f740-402b-ae94-345856e42fef",
+      "name": "Extract PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "id": "3fffc594-7deb-4533-aa23-027bc5cf63bd",
+      "name": "Extract Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "msg",
+              "name": "message",
+              "value": "=Format file .{{ $('Siapkan File').first().json.ext }} belum didukung. Gunakan: xlsx, xls, csv, pdf, txt, md, atau json. (File Word bisa disimpan sebagai PDF dulu.)",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "33ff5a4b-27e9-4a58-9d11-0d6eecc2c838",
+      "name": "File Tidak Didukung",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const MAX_CHARS_PER_DOC = 1000000;\nconst meta = $('Siapkan File').first().json;\nconst items = $input.all().map(i => i.json);\nlet text = '';\n\nif (['xlsx', 'xls', 'csv'].includes(meta.ext)) {\n  const headers = [...new Set(items.flatMap(r => Object.keys(r)))];\n  const lines = ['Kolom: ' + headers.join(' | ')];\n  items.forEach((r, idx) => {\n    lines.push('Data #' + (idx + 1) + ': ' + headers.map(h => r[h] ?? '').join(' | '));\n  });\n  text = lines.join('\\n');\n} else {\n  text = items.map(r => r.text ?? r.data ?? '').join('\\n');\n}\n\nlet truncated = false;\nif (text.length > MAX_CHARS_PER_DOC) {\n  text = text.slice(0, MAX_CHARS_PER_DOC);\n  truncated = true;\n}\n\nreturn [{ json: { mode: meta.mode, fileName: meta.fileName, ext: meta.ext, text, truncated } }];"
+      },
+      "id": "e24a064c-db30-4bcd-9c31-b89165dbe3c8",
+      "name": "Gabung Teks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-replace",
+              "leftValue": "={{ $json.mode }}",
+              "rightValue": "Ganti semua knowledge",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "44c0590a-530f-423b-adf3-c08e47ae4163",
+      "name": "Mode Ganti?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "http://qdrant:6333/collections/knowledge_dokumen_v2",
+        "options": {}
+      },
+      "id": "be1cbf60-f310-466b-9afd-c0fae1ee521d",
+      "name": "Hapus Collection (Ganti)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1808,
+        224
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/knowledge_dokumen_v2/points/delete?wait=true",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filter: { must: [ { key: 'fileName', match: { value: $json.fileName } } ] } }) }}",
+        "options": {}
+      },
+      "id": "7c46516d-dbaa-4973-9acc-720d1be13708",
+      "name": "Hapus Versi Lama File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1808,
+        416
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "http://qdrant:6333/collections/knowledge_dokumen_v2",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"vectors\": {\"size\": 768, \"distance\": \"Cosine\"}}",
+        "options": {}
+      },
+      "id": "8de05ab1-43b2-4683-becb-12b5326a8441",
+      "name": "Buat Collection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2048,
+        320
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const doc = $('Gabung Teks').first().json;\nconst MAX = 2000;\nconst BATCH = 20;\nconst tabular = ['xlsx', 'xls', 'csv'].includes(doc.ext);\nconst rawLines = doc.text.split('\\n');\n\nlet header = '';\nlet lines = rawLines;\nif (tabular) { header = rawLines[0]; lines = rawLines.slice(1); }\n\n// Setiap potongan diawali nama dokumen (+ header kolom untuk data tabel)\nconst prefix = '[Dokumen: ' + doc.fileName + ']\\n' + (header ? header + '\\n' : '');\n\nconst pieces = [];\nfor (const l of lines) {\n  if (l.length > MAX) {\n    for (let i = 0; i < l.length; i += MAX) pieces.push(l.slice(i, i + MAX));\n  } else {\n    pieces.push(l);\n  }\n}\n\nconst chunks = [];\nlet cur = [];\nlet len = 0;\nfor (const p of pieces) {\n  if (len + p.length + 1 > MAX && cur.length) {\n    chunks.push(cur.join('\\n'));\n    const last = cur[cur.length - 1];\n    cur = (!tabular && last.length < 300) ? [last] : [];\n    len = cur.reduce((a, b) => a + b.length + 1, 0);\n  }\n  cur.push(p);\n  len += p.length + 1;\n}\nif (cur.length) chunks.push(cur.join('\\n'));\n\nlet texts = chunks.filter(c => c.trim()).map(c => prefix + c);\nif (!texts.length) texts = [prefix + '(dokumen kosong)'];\n\nconst out = [];\nfor (let i = 0; i < texts.length; i += BATCH) {\n  out.push({ json: { texts: texts.slice(i, i + BATCH), start: i, fileName: doc.fileName } });\n}\nreturn out;"
+      },
+      "id": "e5521c77-c9b9-4256-b2d1-a93d573654ee",
+      "name": "Buat Batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2256,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ requests: $json.texts.map(t => ({ model: 'models/gemini-embedding-001', content: { parts: [{ text: t }] }, taskType: 'RETRIEVAL_DOCUMENT', outputDimensionality: 768 })) }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          }
+        }
+      },
+      "id": "7431e7d2-567c-4326-a2fc-ff11380b24a0",
+      "name": "Embed Dokumen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2480,
+        320
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HUt9qUzmBRVsowXZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const batches = $('Buat Batch').all();\nconst embs = $input.all();\nconst uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {\n  const r = Math.random() * 16 | 0;\n  return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);\n});\n\nreturn embs.map((e, i) => {\n  const b = batches[i].json;\n  const vals = e.json.embeddings || [];\n  if (vals.length !== b.texts.length) {\n    throw new Error('Embedding gagal: ' + JSON.stringify(e.json).slice(0, 400));\n  }\n  const points = b.texts.map((t, k) => {\n    const v = vals[k].values;\n    if (!v || !v.length) throw new Error('Embedding kosong untuk potongan #' + (b.start + k));\n    return { id: uuid(), vector: v, payload: { content: t, fileName: b.fileName, chunkIndex: b.start + k } };\n  });\n  return { json: { body: { points } } };\n});"
+      },
+      "id": "cf9f5f51-f65f-4d8c-b269-879e02adeb9f",
+      "name": "Susun Points",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2704,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "http://qdrant:6333/collections/knowledge_dokumen_v2/points?wait=true",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "id": "5c8a0b66-d0d0-4da7-af51-86699b25773c",
+      "name": "Simpan Points",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2928,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const doc = $('Gabung Teks').first().json;\nconst n = $('Susun Points').all().reduce((a, i) => a + i.json.body.points.length, 0);\nconst message = '✅ \"' + doc.fileName + '\" berhasil disimpan ke Qdrant (' + n + ' potongan teks)'\n  + (doc.truncated ? ' — sebagian isi dipotong karena terlalu panjang' : '')\n  + '.\\n\\nSekarang kamu bisa mulai chat. Untuk menambah dokumen lain atau melihat daftar knowledge, kirim form ini lagi.';\nreturn [{ json: { message } }];"
+      },
+      "id": "eda62fb8-5afd-4eee-bbbd-205291cbabc7",
+      "name": "Ringkasan Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3136,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Proses Knowledge Selesai",
+        "completionMessage": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "0cd49107-c4a8-433d-8385-1e52b1d42095",
+      "name": "Hasil Upload",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        3360,
+        576
+      ],
+      "webhookId": "hasil-upload-knowledge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const MAX_CHARS = 800000;\nconst meta = $('Siapkan File').first().json;\nconst items = $input.all().map(i => i.json);\nconst headers = [...new Set(items.flatMap(r => Object.keys(r)))];\nconst lines = ['Kolom: ' + headers.join(' | ')];\nitems.forEach((r, idx) => {\n  lines.push('Data #' + (idx + 1) + ': ' + headers.map(h => r[h] ?? '').join(' | '));\n});\nlet text = lines.join('\\n');\nlet truncated = false;\nif (text.length > MAX_CHARS) {\n  text = text.slice(0, MAX_CHARS) + '\\n\\n[CATATAN: tabel terlalu panjang, sebagian baris dipotong]';\n  truncated = true;\n}\n\nconst sd = $getWorkflowStaticData('global');\nsd.tables = sd.tables || {};\nif (meta.mode === 'Ganti semua knowledge') sd.tables = {};\nsd.tables[meta.fileName] = {\n  fileName: meta.fileName, text, rows: items.length, chars: text.length,\n  uploadedAt: new Date().toISOString()\n};\n\nconst message = '✅ Tabel \"' + meta.fileName + '\" (' + items.length + ' baris) disimpan langsung tanpa embedding'\n  + (truncated ? ' — sebagian baris dipotong karena terlalu panjang' : '')\n  + '.\\n\\nSekarang kamu bisa mulai chat.';\nreturn [{ json: { message, mode: meta.mode } }];"
+      },
+      "id": "613ea31f-1f74-4b32-a7ce-2c5d4ac69cb4",
+      "name": "Simpan Tabel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "tbl-replace",
+              "leftValue": "={{ $json.mode }}",
+              "rightValue": "Ganti semua knowledge",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "427be3a9-363d-4dd6-a299-3a89283e0d25",
+      "name": "Ganti Tabel?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "http://qdrant:6333/collections/knowledge_dokumen_v2",
+        "options": {}
+      },
+      "id": "357aec84-7a30-47cf-adc1-04c80c54b440",
+      "name": "Hapus Collection (Tabel)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1808,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "msg",
+              "name": "message",
+              "value": "={{ $('Simpan Tabel').first().json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "60c3d55a-21e6-4e6d-99fa-93e4e60ebaf7",
+      "name": "Pesan Tabel",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2048,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "hapus-0",
+                    "leftValue": "={{ $json.mode }}",
+                    "rightValue": "Hapus semua knowledge",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "hapus"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "lihat-0",
+                    "leftValue": "={{ $json.mode }}",
+                    "rightValue": "Lihat daftar knowledge",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "lihat"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "9d0341c9-44e9-4ffd-bf7c-64496e6ec908",
+      "name": "Mode Kelola",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        848,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "http://qdrant:6333/collections/knowledge_dokumen_v2",
+        "options": {}
+      },
+      "id": "7fe16358-cd16-4d06-8461-b59069d59d55",
+      "name": "Hapus Collection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1104,
+        816
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sd = $getWorkflowStaticData('global');\nsd.tables = {};\nreturn [{ json: { message: '🗑️ Semua knowledge (dokumen di Qdrant dan tabel) sudah dihapus.' } }];"
+      },
+      "id": "3da35ca8-c002-4446-b7d8-18a761e4ae8f",
+      "name": "Pesan Hapus",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/knowledge_dokumen_v2/points/scroll",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"limit\": 10000, \"with_payload\": {\"include\": [\"fileName\"]}, \"with_vector\": false}",
+        "options": {}
+      },
+      "id": "2701910d-043a-4248-8246-65eee3d1de16",
+      "name": "Ambil Daftar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1104,
+        960
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst pts = (r.result && r.result.points) || [];\nconst counts = {};\nfor (const p of pts) {\n  const n = (p.payload && p.payload.fileName) || '(tanpa nama)';\n  counts[n] = (counts[n] || 0) + 1;\n}\nconst sd = $getWorkflowStaticData('global');\nconst tables = Object.values(sd.tables || {});\n\nconst lines = [];\nObject.entries(counts).forEach(([n, c]) => lines.push(n + ' — dokumen, ' + c + ' potongan (Qdrant)'));\ntables.forEach(t => lines.push(t.fileName + ' — tabel, ' + t.rows + ' baris (tanpa embedding)'));\nif (!lines.length) return [{ json: { message: 'Belum ada knowledge tersimpan.' } }];\n\nlet message = 'Knowledge tersimpan:\\n' + lines.map((l, i) => (i + 1) + '. ' + l).join('\\n');\nif (r.result && r.result.next_page_offset) message += '\\n\\n(Catatan: daftar dokumen Qdrant mungkin belum lengkap.)';\nreturn [{ json: { message } }];"
+      },
+      "id": "9af1de5f-eb48-468f-a49b-1e72cae5d790",
+      "name": "Pesan Daftar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "msg",
+              "name": "message",
+              "value": "=⚠️ Pilih file dokumen terlebih dahulu untuk mode \"{{ $json.mode }}\".",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "728b85fc-fd84-4aa2-99b7-93aedd8487d5",
+      "name": "Pilih File Dulu",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        1104
+      ]
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Halo! 👋 Saya menjawab berdasarkan knowledge yang sudah diunggah lewat form Upload Knowledge. Silakan tanya apa saja.",
+        "options": {
+          "subtitle": "Tanya jawab berdasarkan knowledge tersimpan",
+          "title": "Chatbot Dokumen"
+        }
+      },
+      "id": "30adb79d-1c1d-4e18-b06a-d68511628b9e",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        1520
+      ],
+      "webhookId": "chatbot-dokumen-gemini"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'models/gemini-embedding-001', content: { parts: [{ text: $json.chatInput }] }, taskType: 'RETRIEVAL_QUERY', outputDimensionality: 768 }) }}",
+        "options": {}
+      },
+      "id": "3771ac30-1b0a-437d-bf20-6fd08d8c445f",
+      "name": "Embed Pertanyaan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        1520
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HUt9qUzmBRVsowXZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/knowledge_dokumen_v2/points/query",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.embedding.values, limit: 10, with_payload: true }) }}",
+        "options": {}
+      },
+      "id": "d5f75c8e-0495-42bf-9f32-422302e143df",
+      "name": "Cari Qdrant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        1520
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const MAX_DOC = 60000;\nconst MAX_TABLE = 800000;\nconst chat = $('Chat Trigger').first().json;\nconst r = $input.first().json;\nconst raw = r.result && (r.result.points || r.result);\nconst hits = Array.isArray(raw) ? raw : [];\nconst files = new Set();\n\nlet docText = '';\nhits.forEach((h, i) => {\n  const p = h.payload || {};\n  if (p.fileName) files.add(p.fileName);\n  const skor = (typeof h.score === 'number') ? h.score.toFixed(3) : '-';\n  const block = '--- Potongan ' + (i + 1) + ' (skor ' + skor + ') ---\\n' + (p.content || '') + '\\n\\n';\n  if (docText.length + block.length > MAX_DOC) return;\n  docText += block;\n});\n\nconst sd = $getWorkflowStaticData('global');\nconst tables = Object.values(sd.tables || {});\nlet tableText = '';\nfor (const t of tables) {\n  const block = '=== TABEL: ' + t.fileName + ' ===\\n' + t.text + '\\n\\n';\n  if (tableText.length + block.length > MAX_TABLE) {\n    tableText += '[CATATAN: tabel terlalu banyak, sebagian tidak dimuat]';\n    break;\n  }\n  tableText += block;\n  files.add(t.fileName);\n}\n\nreturn [{ json: {\n  sessionId: chat.sessionId,\n  chatInput: chat.chatInput,\n  fileName: [...files].join(', '),\n  tableText,\n  documentText: docText\n} }];"
+      },
+      "id": "fac72b6c-6c8f-41e7-b4dc-d44bd0c78bbb",
+      "name": "Susun Konteks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=Kamu adalah asisten yang menjawab pertanyaan berdasarkan knowledge (dokumen/Excel) yang sudah tersimpan.\n\nATURAN:\n- Jawab dengan bahasa yang dipakai user.\n- Gunakan hanya informasi dari DATA TABEL dan HASIL PENCARIAN DOKUMEN di bawah. Jika jawabannya tidak ada, katakan tidak ditemukan.\n- DATA TABEL berisi seluruh baris dari file Excel/CSV. Hitung dengan teliti (jumlah, rata-rata, filter, dll) dan sebutkan kolom atau nomor data sumbernya.\n- HASIL PENCARIAN DOKUMEN hanya berisi potongan paling relevan dari PDF/teks, bukan seluruh dokumen.\n- Jika keduanya kosong, minta user mengunggah dokumen lewat form Upload Knowledge terlebih dahulu.\n\nDAFTAR SUMBER: {{ $json.fileName || '(belum ada)' }}\n\nDATA TABEL:\n{{ $json.tableText || '(tidak ada)' }}\n\nHASIL PENCARIAN DOKUMEN:\n{{ $json.documentText || '(tidak ada)' }}"
+        }
+      },
+      "id": "69672ba4-a8e2-4c4e-bf3e-67deff48cd24",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "0f823c9b-f062-468a-b32a-859bc76db8f5",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        1760
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HUt9qUzmBRVsowXZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "id": "18254513-008b-481e-aa3c-5e72800cdfaf",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1216,
+        1760
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "waha-chatbot",
+        "options": {}
+      },
+      "id": "81551e75-3c4e-48a9-86cd-91d2a8790a21",
+      "name": "WA Masuk",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        160,
+        1984
+      ],
+      "webhookId": "waha-chatbot"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n// Webhook n8n membungkus data WAHA di body: { event, session, payload: {...} }\nconst payload = (item.body && item.body.payload) || item.payload || {};\nconst chatId = payload.from || '';\nconst text = (payload.body || '').toString().trim();\n\n// Abaikan pesan yang dikirim sendiri, pesan kosong, status broadcast, atau chat grup\nif (payload.fromMe || !text || chatId.endsWith('@broadcast') || chatId.endsWith('@g.us')) {\n  return [];\n}\n\nreturn [{ json: { chatId, sender: chatId.split('@')[0], text } }];"
+      },
+      "id": "4dd899c6-2a96-45c1-baa2-faea386ef869",
+      "name": "Filter Pesan WA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        1984
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'models/gemini-embedding-001', content: { parts: [{ text: $('Filter Pesan WA').first().json.text }] }, taskType: 'RETRIEVAL_QUERY', outputDimensionality: 768 }) }}",
+        "options": {}
+      },
+      "id": "eb702d25-b705-4c3b-bd7b-d7a13eadd6df",
+      "name": "Embed Pertanyaan WA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        1984
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HUt9qUzmBRVsowXZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/knowledge_dokumen_v2/points/query",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.embedding.values, limit: 10, with_payload: true }) }}",
+        "options": {}
+      },
+      "id": "7a839eb6-3490-4918-9e2c-7c0b009fca3c",
+      "name": "Cari Qdrant WA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        1984
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const MAX_DOC = 60000;\nconst MAX_TABLE = 800000;\nconst wa = $('Filter Pesan WA').first().json;\nconst r = $input.first().json;\nconst raw = r.result && (r.result.points || r.result);\nconst hits = Array.isArray(raw) ? raw : [];\nconst files = new Set();\n\nlet docText = '';\nhits.forEach((h, i) => {\n  const p = h.payload || {};\n  if (p.fileName) files.add(p.fileName);\n  const skor = (typeof h.score === 'number') ? h.score.toFixed(3) : '-';\n  const block = '--- Potongan ' + (i + 1) + ' (skor ' + skor + ') ---\\n' + (p.content || '') + '\\n\\n';\n  if (docText.length + block.length > MAX_DOC) return;\n  docText += block;\n});\n\nconst sd = $getWorkflowStaticData('global');\nconst tables = Object.values(sd.tables || {});\nlet tableText = '';\nfor (const t of tables) {\n  const block = '=== TABEL: ' + t.fileName + ' ===\\n' + t.text + '\\n\\n';\n  if (tableText.length + block.length > MAX_TABLE) {\n    tableText += '[CATATAN: tabel terlalu banyak, sebagian tidak dimuat]';\n    break;\n  }\n  tableText += block;\n  files.add(t.fileName);\n}\n\nreturn [{ json: {\n  sessionId: wa.chatId,\n  chatId: wa.chatId,\n  chatInput: wa.text,\n  fileName: [...files].join(', '),\n  tableText,\n  documentText: docText\n} }];"
+      },
+      "id": "db255f88-57bc-4ef1-bcc1-2036a7d26059",
+      "name": "Susun Konteks WA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        1984
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=Kamu adalah asisten yang menjawab pertanyaan berdasarkan knowledge (dokumen/Excel) yang sudah tersimpan.\n\nATURAN:\n- Jawab dengan bahasa yang dipakai user.\n- Gunakan hanya informasi dari DATA TABEL dan HASIL PENCARIAN DOKUMEN di bawah. Jika jawabannya tidak ada, katakan tidak ditemukan.\n- DATA TABEL berisi seluruh baris dari file Excel/CSV. Hitung dengan teliti (jumlah, rata-rata, filter, dll) dan sebutkan kolom atau nomor data sumbernya.\n- HASIL PENCARIAN DOKUMEN hanya berisi potongan paling relevan dari PDF/teks, bukan seluruh dokumen.\n- Jika keduanya kosong, minta user mengunggah dokumen lewat form Upload Knowledge terlebih dahulu.\n\nDAFTAR SUMBER: {{ $json.fileName || '(belum ada)' }}\n\nDATA TABEL:\n{{ $json.tableText || '(tidak ada)' }}\n\nHASIL PENCARIAN DOKUMEN:\n{{ $json.documentText || '(tidak ada)' }}\n\nATURAN WHATSAPP:\n- Jawaban dikirim lewat WhatsApp: gunakan teks sederhana, hindari tabel dan heading markdown. Untuk penekanan gunakan *teks* (format WhatsApp).\n- Jawaban tidak boleh lebih dari 3000 karakter."
+        }
+      },
+      "id": "2f4164b4-be55-4803-aedc-5bcdb9349d08",
+      "name": "AI Agent WA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        1984
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "809808df-dc99-4143-a86f-8632fc623fc3",
+      "name": "Google Gemini Chat Model WA",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        2224
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HUt9qUzmBRVsowXZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chatId }}",
+        "contextWindowLength": 10
+      },
+      "id": "4650bf88-e3a9-4e2d-8d90-9e8b94104110",
+      "name": "Window Buffer Memory WA",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1488,
+        2224
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://waha:3000/api/sendText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "admin"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chatId: $('Susun Konteks WA').first().json.chatId, text: $json.output, session: 'default' }) }}",
+        "options": {}
+      },
+      "id": "10e5b593-ccaa-4c50-9f99-756727a2439e",
+      "name": "Balas WA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1712,
+        1984
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Form Upload Knowledge": {
+      "main": [
+        [
+          {
+            "node": "Siapkan File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Siapkan File": {
+      "main": [
+        [
+          {
+            "node": "Simpan File?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simpan File?": {
+      "main": [
+        [
+          {
+            "node": "Tipe File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mode Kelola",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipe File": {
+      "main": [
+        [
+          {
+            "node": "Extract XLSX",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract XLS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract CSV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "File Tidak Didukung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract XLSX": {
+      "main": [
+        [
+          {
+            "node": "Simpan Tabel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract XLS": {
+      "main": [
+        [
+          {
+            "node": "Simpan Tabel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract CSV": {
+      "main": [
+        [
+          {
+            "node": "Simpan Tabel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF": {
+      "main": [
+        [
+          {
+            "node": "Gabung Teks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text": {
+      "main": [
+        [
+          {
+            "node": "Gabung Teks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simpan Tabel": {
+      "main": [
+        [
+          {
+            "node": "Ganti Tabel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ganti Tabel?": {
+      "main": [
+        [
+          {
+            "node": "Hapus Collection (Tabel)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pesan Tabel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hapus Collection (Tabel)": {
+      "main": [
+        [
+          {
+            "node": "Pesan Tabel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pesan Tabel": {
+      "main": [
+        [
+          {
+            "node": "Hasil Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gabung Teks": {
+      "main": [
+        [
+          {
+            "node": "Mode Ganti?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mode Ganti?": {
+      "main": [
+        [
+          {
+            "node": "Hapus Collection (Ganti)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Hapus Versi Lama File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hapus Collection (Ganti)": {
+      "main": [
+        [
+          {
+            "node": "Buat Collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hapus Versi Lama File": {
+      "main": [
+        [
+          {
+            "node": "Buat Collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buat Collection": {
+      "main": [
+        [
+          {
+            "node": "Buat Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buat Batch": {
+      "main": [
+        [
+          {
+            "node": "Embed Dokumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Dokumen": {
+      "main": [
+        [
+          {
+            "node": "Susun Points",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Susun Points": {
+      "main": [
+        [
+          {
+            "node": "Simpan Points",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simpan Points": {
+      "main": [
+        [
+          {
+            "node": "Ringkasan Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ringkasan Upload": {
+      "main": [
+        [
+          {
+            "node": "Hasil Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Tidak Didukung": {
+      "main": [
+        [
+          {
+            "node": "Hasil Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mode Kelola": {
+      "main": [
+        [
+          {
+            "node": "Hapus Collection",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ambil Daftar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pilih File Dulu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hapus Collection": {
+      "main": [
+        [
+          {
+            "node": "Pesan Hapus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pesan Hapus": {
+      "main": [
+        [
+          {
+            "node": "Hasil Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil Daftar": {
+      "main": [
+        [
+          {
+            "node": "Pesan Daftar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pesan Daftar": {
+      "main": [
+        [
+          {
+            "node": "Hasil Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pilih File Dulu": {
+      "main": [
+        [
+          {
+            "node": "Hasil Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Embed Pertanyaan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Pertanyaan": {
+      "main": [
+        [
+          {
+            "node": "Cari Qdrant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cari Qdrant": {
+      "main": [
+        [
+          {
+            "node": "Susun Konteks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Susun Konteks": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WA Masuk": {
+      "main": [
+        [
+          {
+            "node": "Filter Pesan WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Pesan WA": {
+      "main": [
+        [
+          {
+            "node": "Embed Pertanyaan WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Pertanyaan WA": {
+      "main": [
+        [
+          {
+            "node": "Cari Qdrant WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cari Qdrant WA": {
+      "main": [
+        [
+          {
+            "node": "Susun Konteks WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Susun Konteks WA": {
+      "main": [
+        [
+          {
+            "node": "AI Agent WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent WA": {
+      "main": [
+        [
+          {
+            "node": "Balas WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model WA": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent WA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory WA": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent WA",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1bd5c0fc-93ca-428c-b9a5-333f19c3a63e",
+  "meta": {
+    "instanceId": "d3ee13df695f49fad6e25d9bd4807fe549a81baee8ffbc4fe38ad5c831282c1a"
+  },
+  "nodeGroups": [],
+  "id": "2T9QwYbXgjA3UMRA",
+  "tags": []
+}
